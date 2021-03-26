@@ -171,6 +171,24 @@ fields:
       users[i].name_fields()
 ---
 sets:
+  - users[i].address.address
+  - users[i].address.city
+  - users[i].address.zip
+id: persons address
+generic object: ALIndividual
+question: |
+  What is ${ users[i].possessive('address') }?
+fields:
+  - The same as ${ users[0]}'s address: users[i].address
+    datatype: object_radio
+    choices:
+      - users[0].address
+    disable others: True
+    none of the above: True
+  - code: |
+      users[i].address_fields(default_state="MA")
+---
+sets:
   - other_parties[0].name.first
 id: names of opposing parties
 question: |
