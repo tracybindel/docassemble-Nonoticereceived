@@ -1,0 +1,319 @@
+include:
+  - docassemble.AssemblyLine:al_package.yml
+  - docassemble.MassAccess:massaccess.yml
+---
+comment: |
+  The metadata section controls the tab title and saved interview title. You can delete this section if you include this YAML file in another YAML file.
+metadata:
+  title: |
+    No notice received
+  short title: |
+    No notice received
+  tags:
+    - HO-00-00-00-00
+---
+comment: |
+  This section is used by AssemblyLine to control how some of the questions work.
+mandatory: True
+code: |
+  interview_metadata # make sure we initialize the object
+  if not defined("interview_metadata['No_Notice_Received']"):
+    interview_metadata.initializeObject('No_Notice_Received')
+  interview_metadata['No_Notice_Received'].update({
+    'title': 'No notice received',
+    'short title': 'No notice received',
+    'description': 'No notice received',
+    'original_form': '',
+    'allowed courts': [
+      'Boston Municipal Court',
+      'District Court',
+      'Housing Court',
+      'Superior Court',
+    ],
+    'categories': [
+      'HO-00-00-00-00',
+    ],
+    'logic block variable': 'No_Notice_Received',
+    'attachment block variable': 'No_Notice_Received_attachment',
+    'typical role': 'defendant',
+  })
+---
+code: |
+  interview_short_title = 'Ask the court for a Motion for Summary Judgement or Motion to Dismiss for Failure to Properly Terminate Tenancy: Mass Access Project'
+---
+code: |
+  al_form_type = 'existing_case'
+---
+features:
+  navigation: True
+---
+sections:
+  - review_No_Notice_Received: Review your answers
+---
+objects:
+  - users: ALPeopleList.using(there_are_any=True)
+  - other_parties: ALPeopleList.using(there_are_any=True)
+
+---
+###################### Main order ######################
+mandatory: True
+comment: |
+  This block includes the logic for standalone interviews.
+  Delete mandatory: True to include in another interview
+id: main_order_No_Notice_Received
+code: |
+  al_intro_screen
+  No_Notice_Received_intro
+  # Interview order block has form-specific logic controlling order/branching
+  interview_order_No_Notice_Received
+  signature_date
+  # Save (anonymized) interview statistics.
+  store_variables_snapshot(data={'zip': users[0].address.zip})
+  No_Notice_Received_preview_question  # Pre-canned preview screen
+  basic_questions_signature_flow
+  No_Notice_Received_download
+---
+#################### Interview order #####################
+comment: |
+  Controls order and branching logic of questions in the interview
+id: interview_order_No_Notice_Received
+code: |
+  # Set the allowed courts for this interview
+  allowed_courts = interview_metadata["No_Notice_Received"]["allowed courts"]
+  nav.set_section('review_No_Notice_Received')
+  user_role = 'defendant'
+  user_ask_role = 'defendant'
+  set_progress(16.67)
+  docket_number
+  trial_court
+  users.gather()
+  defendants = users
+  plaintiffs = other_parties
+  set_parts(subtitle=str(users))
+  set_progress(33.33)
+  users[0].address.address
+  users[0].phone_number
+  trial_court.address.address
+  set_progress(50.0)
+  defendants.gather()
+  users[0].email
+  interview_order_No_Notice_Received = True
+---
+comment: |
+id: Motion for Summary Judgement or Motion to Dimiss for Failure to Properly Terminate Tenancy
+continue button field: No_Notice_Received_intro
+question: |
+  Defendant's Motion for Summary Judgement or Motion to Dimiss for Failure to       Properly Terminate Tenancy
+subquestion: |
+  If your landlord is taking you to court to evict you and **if you did not receive the Notice To Quit or Notice to Terminate Your Tenancy or 30 day or 14 day notice**, you should use this form. Before your landlord can file an eviction case, they first have to file a Notice to Quit with either 30 days or 14 days notice. 
+  
+  This is a form for a tenant's motion for summary judgement or a motion to         dismiss for failure to properly serve notice to terminate tenancy.
+  
+  **Before filling out this form, make sure you have the name of your landlord who started this claim, the court that you will be going to, and the docket       number issued to you.**
+  
+  After filling out this form you will be able to download a PDF of the Motion to   submit regarding your case.
+---
+id: Review your form before you sign it
+continue button field: No_Notice_Received_preview_question
+question: |
+  Review your form before you sign it
+subquestion: |
+  Here is a preview of the form you will sign on the next page. 
+  
+   ${ al_user_bundle.as_pdf(key='preview') }
+  
+  Click the image to open it in a new tab. Click the 'Make changes' button to fix any mistakes.
+  
+  ${ action_button_html(url_action('review_No_Notice_Received'), label='Make changes', color='info') } 
+  
+  Remember to come back to this window to continue and sign your form.
+---
+id: What is your name
+question: |
+  What is your name?
+fields:
+  - 'User': user
+
+---
+id: What is your contact information
+question: |
+  What is your contact information?
+fields:
+  - 'Users[0].other contact method': users[0].other_contact_method
+    input type: area
+---
+id: any other users
+question: |
+  % if al_form_type in ['starts_case','existing_case','appeal']:
+  Is there another tenant living with you who will also sign this form?
+  % else:
+  Is anyone else adding their name to this form with you?
+  % endif
+subquestion: |
+  % if len(users.elements) > 1:  
+  So far you have told us about ${comma_and_list(users.complete_elements())}.
+  % endif  
+yesno: users.there_is_another 
+---
+sets:
+  - users[i].name.first
+  - users[i].name.last
+id: other users names
+question: |
+  % if al_form_type in ['starts_case','existing_case','appeal']:
+  What is the name of the ${ ordinal(i) } tenant who will also sign their name on this form with you?
+  % else:
+  What is the name of the ${ ordinal(i) } tenant who will also sign their name on
+  this form with you?
+  % endif
+fields:
+  - code: |
+      users[i].name_fields()
+---
+sets:
+  - other_parties[0].name.first
+id: names of opposing parties
+question: |
+  What is the name of your landlord?
+subquestion:  |
+  Write your landlord's name exactly the same way as it is
+  written on your court paperwork.
+  See Example Below. 
+  [FILE landlord_name.jpg, 100%]
+fields:
+  - code: |
+      other_parties[0].name_fields(person_or_business='unsure')
+---
+id: What is your docket number
+question: |
+  What is your docket number?
+fields:
+  - 'Docket number': docket_number
+---
+id: any other opposing parties
+question: |
+  % if users==plaintiffs:
+  Is there any other **defendant** or respondent in this
+  matter?
+  % else:
+  Is there any other **landlord** or plaintiff named in this matter?
+  % endif
+yesno: other_parties.there_is_another  
+---
+sets:
+  - other_parties[i].name.first
+id: names of opposing parties
+question: |
+  What is the name of your other landlord?
+subquestion:  |
+  Write your other landlord's name exactly the same way as it is
+  written on your court paperwork.
+  See Example Below. 
+  [FILE landlord_name.jpg, 100%]
+fields:
+  - code: |
+      other_parties[i].name_fields(person_or_business='unsure')
+---
+progress: 100
+id: download
+event: No_Notice_Received_download
+question: |
+  Your form is ready to download.
+subquestion: |
+  Thank you ${users}. Your form is ready to download and deliver.
+  
+  View, download and send your form below. Click the "Make changes" button to fix any mistakes. 
+  
+  ${ action_button_html(url_action('review_No_Notice_Received'), label='Make changes', color='info') } 
+  
+  ${ al_user_bundle.download_list_html() }
+  
+  ${ al_user_bundle.send_button_html() }
+---
+objects:
+  - No_Notice_Received_attachment: ALDocument.using(title="No notice received", filename="No_Notice_Received", enabled=True, has_addendum=False)
+---
+objects:
+  - al_user_bundle: ALDocumentBundle.using(elements=[No_Notice_Received_attachment], filename="No_Notice_Received.pdf", title="All forms to download for your records")
+  - al_court_bundle: ALDocumentBundle.using(elements=[No_Notice_Received_attachment], filename="No_Notice_Received.pdf", title="All forms to download for your records")
+---
+attachment:
+    variable name: No_Notice_Received_attachment[i]
+    name: No notice received
+    filename: No-notice-received
+    docx template file: No_Notice_Received.docx
+---
+id: No_Notice_Received review screen
+event: review_No_Notice_Received
+question: |
+  Review Screen
+subquestion: |
+  Edit your answers below
+review: 
+  - Edit: docket_number
+    button: |
+      **Docket number**:
+      ${ docket_number }
+  - Edit: users[0].other_contact_method
+    button: |
+      **Users[0].other contact method**:
+      > ${ single_paragraph(users[0].other_contact_method) }
+  - Edit: landlord
+    button: |
+      **Landlord**:
+      ${ landlord }
+  - Edit: user
+    button: |
+      **User**:
+      ${ user }
+  - Edit: courts[0].name.first
+    button: |
+      **courts**
+
+      % for my_var in courts:
+        * ${ my_var }
+      % endfor
+    # NOTE: a question block with 'courts.revisit'
+    # lets the user edit all of the items at once
+  - Edit: users[0].name.first
+    button: |
+      **users**
+
+      % for my_var in users:
+        * ${ my_var }
+      % endfor
+    # NOTE: a question block with 'users.revisit'
+    # lets the user edit all of the items at once
+  - Edit: users[0].address.address
+    button: |
+      **users[0].address.address**:
+      ${ users[0].address.address }
+  - Edit: users[0].phone_number
+    button: |
+      **users[0].phone_number**:
+      ${ users[0].phone_number }
+  - Edit: courts[0].address.county
+    button: |
+      **courts[0].address.county**:
+      ${ courts[0].address.county }
+  - Edit: signature_date
+    button: |
+      **signature_date**:
+      ${ signature_date }
+  - Edit: defendants[0].name.first
+    button: |
+      **defendants**
+
+      % for my_var in defendants:
+        * ${ my_var }
+      % endfor
+    # NOTE: a question block with 'defendants.revisit'
+    # lets the user edit all of the items at once
+  - Edit: users[0].email
+    button: |
+      **users[0].email**:
+      ${ users[0].email }
+  - Edit: user.signature
+    button: |
+      **user.signature**:
+      ${ user.signature }
