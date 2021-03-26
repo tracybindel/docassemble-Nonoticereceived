@@ -85,17 +85,17 @@ code: |
   user_ask_role = 'defendant'
   set_progress(16.67)
   docket_number
+  dont_know_docket_number
+  defendants.gather()
   trial_court
-  users.gather()
+  set_progress(33.0)
   defendants = users
   plaintiffs = other_parties
   set_parts(subtitle=str(users))
-  set_progress(33.33)
+  set_progress(70.33)
   users[0].address.address
   users[0].phone_number
   trial_court.address.address
-  set_progress(50.0)
-  defendants.gather()
   users[0].email
   interview_order_No_Notice_Received = True
 ---
@@ -186,15 +186,15 @@ fields:
     disable others: True
     none of the above: True
   - code: |
-      users[i].address_fields(default_state="MA")
+      users[i].address_fields(default_state="MA")     
 ---
 sets:
   - other_parties[0].name.first
 id: names of opposing parties
 question: |
-  What is the name of your landlord?
+  What is the name of your landlord or the plaintiff who filed the suit?
 subquestion:  |
-  Write your landlord's name exactly the same way as it is
+  Write the landlord or plaintiff's name exactly the same way as it is
   written on your court paperwork.
   See Example Below. 
   [FILE landlord_name.jpg, 100%]
@@ -202,11 +202,16 @@ fields:
   - code: |
       other_parties[0].name_fields(person_or_business='unsure')
 ---
-id: What is your docket number
+id: Docket Number
 question: |
   What is your docket number?
 fields:
-  - 'Docket number': docket_number
+  - Docket number: docket_number
+    hide if: dont_know_docket_number
+  - I do not know: dont_know_docket_number
+    datatype: yesno
+validation code: |
+  if dont_know_docket_number: docket_number = ' '
 ---
 id: any other opposing parties
 question: |
@@ -335,3 +340,6 @@ review:
     button: |
       **user.signature**:
       ${ user.signature }
+---
+code: |
+  addresses_to_search = [users[0].address]
